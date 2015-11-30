@@ -14,6 +14,8 @@
 URL_REGEX="http(s)?://(www\.)?youtu(\.)?be"
 USER_TAG=""
 
+URL_QUEUE=()
+INFO_QUEUE=()
 
 valid_url() {
    [[ $1 =~ $URL_REGEX ]]
@@ -36,7 +38,7 @@ lower() {
   echo $@ | awk '{print tolower($0)}'
 }
 
-read_song() {
+read_songs() {
   while read -r line; do
     url=$(echo $line | pup 'a.title attr{href}')
     info=$(echo $line | pup 'a.title text{}')
@@ -44,9 +46,20 @@ read_song() {
     tag=$(lower $(echo $line | pup 'span.linkflairlabel text{}'))
 
     if valid_url $url && current_tag $tag; then
-      play_song $url $info
+      URL_QUEUE+=($url)
+      INFO_QUEUE+=($info)
     fi
   done
+}
+
+play() {
+  if [[ ${#URL_QUEUE[@]} -eq 0 ]]; then
+    echo "No songs available";
+  else
+    for ((i=0;i<${#URL_QUEUE[@]};++i)); do
+      play_song $URL_QUEUE[$i] $INFO_QUEUE[$i]
+    done
+  fi
 }
 
 while getopts ":t:" opt; do
@@ -60,7 +73,15 @@ while getopts ":t:" opt; do
   esac
 done
 
-curl -s 'https://www.reddit.com/r/listentothis' | pup 'p.title' \
-  | tr '\n' ' ' | ag -o '<p class="title">\K.*?(?=</p>)' \
-  | read_song
+# Exit using SIGINT instead of letting MPV capture the signal
+_term() {
+  exit 1
+}
 
+trap _term SIGINT
+
+# Avoid sub-shell
+read_songs < <(curl -s 'https://www.reddit.com/r/listentothis' | pup 'p.title' \
+  | tr '\n' ' ' | ag -o '<p class="title">\K.*?(?=</p>)')
+
+play
