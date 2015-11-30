@@ -1,18 +1,7 @@
 #!/bin/bash
-#
-# Currently needs mpv, youtube-dl and ag
-#
-# Issues:
-# Only listening to youtube
-# Not allowing to only search on tops
-#
-# Todo:
-# Allow soundcloud clips
-# Redirect the mpv output and allow for keyboard shortcuts to cycle through
-# Allow pagination
 
 URL_REGEX="http(s)?://(www\.)?youtu(\.)?be"
-USER_TAG=""
+USER_TAGS=()
 
 URL_QUEUE=()
 INFO_QUEUE=()
@@ -21,12 +10,20 @@ valid_url() {
    [[ $1 =~ $URL_REGEX ]]
 }
 
+contains_tag() {
+  for t in "${USER_TAGS[@]}"; do
+    [[ "$1" == "$t" ]] && return 0
+  done
+  return 1;
+}
+
 current_tag() {
-  [[ $1 == $USER_TAG || $USER_TAG == "" ]]
+  [[ ${#USER_TAGS[@]} -eq 0 ]] || contains_tag $1
 }
 
 music_info() {
-  echo $@ | sed -e 's/( )*\(.*\)( )*--( )*\(.*\)( )*\([0-9]+\).*/\1 -- \2 (\3)/'
+  # Remove extra comments in the title
+  echo $@ | ag -o '^.+ *--.+ *\[.+\] *\([0-9]+\)'
 }
 
 play_song() {
@@ -47,7 +44,7 @@ read_songs() {
 
     if valid_url $url && current_tag $tag; then
       URL_QUEUE+=($url)
-      INFO_QUEUE+=($info)
+      INFO_QUEUE+=("$(music_info $info)")
     fi
   done
 }
@@ -65,7 +62,10 @@ play() {
 while getopts ":t:" opt; do
   case $opt in
     t)
-      USER_TAG=$(lower $OPTARG)
+      args=$(echo $OPTARG | tr ',' '\n')
+      for arg in $args; do
+        USER_TAGS+=($(lower $arg))
+      done
       ;;
     \?)
       echo "Invalid option: -$OPTARG"
