@@ -54,7 +54,7 @@ play() {
     echo "No songs available";
   else
     for ((i=0;i<${#URL_QUEUE[@]};++i)); do
-      play_song $URL_QUEUE[$i] $INFO_QUEUE[$i]
+      play_song ${URL_QUEUE[$i]} ${INFO_QUEUE[$i]}
     done
   fi
 }
