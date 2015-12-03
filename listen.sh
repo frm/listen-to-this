@@ -35,12 +35,18 @@ lower() {
   echo $@ | awk '{print tolower($0)}'
 }
 
+parse_tag() {
+  echo $@
+  lower $(echo $@ \
+    | perl -MHTML::Entities -e 'while(<>) { print decode_entities($_); }')
+}
+
 read_songs() {
   while read -r line; do
     url=$(echo $line | pup 'a.title attr{href}')
     info=$(echo $line | pup 'a.title text{}')
     # I really have to remove this ugly line
-    tag=$(lower $(echo $line | pup 'span.linkflairlabel text{}'))
+    tag=$(parse_tag $(echo $line | pup 'span.linkflairlabel text{}'))
 
     if valid_url $url && current_tag $tag; then
       URL_QUEUE+=($url)

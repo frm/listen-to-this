@@ -18,7 +18,8 @@ Keyboard shortcuts are available. Use `Ctrl-C` to exit, `q` to go to the next so
 # TODO
 
 - [x] Allow multiple tags filtering
-- [ ] Fix tags containing HTML
+- [x] Fix tags containing HTML
+- [ ] Improve song title regex
 - [ ] Allow top pages scraping
 - [ ] Add playlist rewind
 - [ ] Add pagination
